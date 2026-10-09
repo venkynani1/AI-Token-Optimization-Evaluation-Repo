@@ -1,0 +1,11 @@
+Task: Add a CSV export button to the existing React analytics page table.
+Rules:
+- Export only rows currently shown (filtered + sorted).
+- Keep visible column order; omit hidden columns.
+- Dates: ISO 8601.
+- No new dependencies.
+- Keep existing filter/sort behavior intact.
+Steps:
+1. Inspect project; list relevant files before editing.
+2. Implement.
+3. Report changed files and verification steps.
