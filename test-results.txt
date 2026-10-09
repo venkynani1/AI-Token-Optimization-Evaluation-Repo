@@ -1,0 +1,50 @@
+
+> test
+> node --test tests/exportToCsv.test.mjs
+
+TAP version 13
+# Subtest: exports exactly the visible rows, in visible order
+ok 1 - exports exactly the visible rows, in visible order
+  ---
+  duration_ms: 1.79371
+  type: 'test'
+  ...
+# Subtest: keeps column order and excludes hidden columns
+ok 2 - keeps column order and excludes hidden columns
+  ---
+  duration_ms: 0.385505
+  type: 'test'
+  ...
+# Subtest: respects reordered columns
+ok 3 - respects reordered columns
+  ---
+  duration_ms: 0.548496
+  type: 'test'
+  ...
+# Subtest: formats dates as ISO 8601
+ok 4 - formats dates as ISO 8601
+  ---
+  duration_ms: 0.271947
+  type: 'test'
+  ...
+# Subtest: escapes commas, quotes, newlines and formula injection
+ok 5 - escapes commas, quotes, newlines and formula injection
+  ---
+  duration_ms: 0.354179
+  type: 'test'
+  ...
+# Subtest: does not mutate input rows or columns
+ok 6 - does not mutate input rows or columns
+  ---
+  duration_ms: 0.276905
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 142.241341

@@ -6,6 +6,12 @@ Rewrites a verbose 220-token request into a 100-token structured prompt (**−54
 - **Architecture & workflow:** `docs/ARCHITECTURE.md`
 - **Slide:** `CSV_Export_Prompt_Compression.pptx`
 
+## Outputs (`outputs/`)
+
+- `test-results.txt`: full test run, 6/6 passing
+- `sample-export.csv`: real export. The table is filtered (views ≥ 100) and sorted (views desc). The `/docs` row is filtered out, the hidden "Internal ID" column is absent, dates are ISO 8601, and commas, quotes and formulas are escaped. Regenerate with `node outputs/generate-sample.mjs`.
+- `slide-preview.png`: image of the summary slide
+
 ## Run the tests
 
 ```bash
