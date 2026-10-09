@@ -2,6 +2,7 @@
 
 Rewrites a verbose 220-token request into a 100-token structured prompt (**−54.7 %**) with all 13 requirements intact, plus a reference implementation proving the compressed prompt is complete.
 
+- **Interactive demo:** open `index.html` in any browser (no install). It has a live token counter, a 13-requirement coverage checker, a view of what got cut, a savings-at-scale calculator, a working CSV export with automatic proof checks, and in-browser tests.
 - **Submission (judges):** `docs/SUBMISSION.md`
 - **Architecture & workflow:** `docs/ARCHITECTURE.md`
 - **Slide:** `CSV_Export_Prompt_Compression.pptx`

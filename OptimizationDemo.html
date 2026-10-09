@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompt Compression Lab</title>
+<style>
+:root{
+  --bg:#ffffff; --surface:#f2f5f7; --card:#ffffff; --ink:#1f2a37; --muted:#5b6673; --line:#e2e8f0;
+  --teal:#0f766e; --teal-ink:#134e4a; --tint:#ddf1ec; --amber:#b45309; --amber-tint:#fef3c7;
+  --red:#b91c1c; --red-tint:#fee2e2; --grey:#94a3b8; --cut:#f1f5f9;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1419; --surface:#161d24; --card:#1b232b; --ink:#e6edf3; --muted:#9aa7b4; --line:#2a3540;
+    --teal:#2dd4bf; --teal-ink:#99f6e4; --tint:#0f2f2b; --amber:#fbbf24; --amber-tint:#3a2a08;
+    --red:#f87171; --red-tint:#3b1414; --grey:#64748b; --cut:#222b34;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1419; --surface:#161d24; --card:#1b232b; --ink:#e6edf3; --muted:#9aa7b4; --line:#2a3540;
+  --teal:#2dd4bf; --teal-ink:#99f6e4; --tint:#0f2f2b; --amber:#fbbf24; --amber-tint:#3a2a08;
+  --red:#f87171; --red-tint:#3b1414; --grey:#64748b; --cut:#222b34;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.top .wrap{display:flex;align-items:center;gap:16px;height:56px}
+.brand{font-weight:700;font-family:Cambria,Georgia,serif;font-size:18px;white-space:nowrap}
+nav{display:flex;gap:4px;overflow-x:auto;flex:1}
+nav a{color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:8px;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--surface);color:var(--ink)}
+.theme-btn{white-space:nowrap;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;cursor:pointer}
+section{padding:40px 0 8px;scroll-margin-top:60px}
+h1{font-family:Cambria,Georgia,serif;font-size:clamp(28px,4.5vw,44px);line-height:1.15;margin:8px 0 10px}
+h2{font-family:Cambria,Georgia,serif;font-size:26px;margin:0 0 6px}
+h3{font-size:16px;margin:0 0 10px}
+.lede{color:var(--muted);max-width:720px;margin:0 0 20px}
+.kicker{color:var(--teal);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.card{background:var(--surface);border-radius:14px;padding:18px}
+.stat .n{font-family:Cambria,Georgia,serif;font-size:34px;font-weight:700;color:var(--teal);line-height:1.1}
+.stat .l{color:var(--muted);font-size:13px}
+textarea{width:100%;min-height:230px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--card);color:var(--ink);font:13px/1.55 var(--mono)}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:7px 12px;font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{border-color:var(--teal)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:var(--bg);font-weight:600}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.meter{margin-top:10px;font-size:13px;color:var(--muted)}
+.meter b{color:var(--ink)}
+.bars{display:grid;gap:10px;margin-top:6px}
+.bar{display:grid;grid-template-columns:90px 1fr 70px;align-items:center;gap:10px;font-size:14px}
+.track{height:18px;background:var(--card);border-radius:6px;overflow:hidden}
+.fill{height:100%;border-radius:6px;transition:width .35s ease}
+.formula{font:13px var(--mono);background:var(--card);padding:10px 12px;border-radius:9px;margin-top:12px;overflow-x:auto;white-space:pre}
+.req{display:grid;grid-template-columns:28px 1fr 64px 64px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.req:last-child{border-bottom:0}
+.req.head{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:6px;font-weight:700;font-size:13px}
+.ok{background:var(--tint);color:var(--teal)}
+.bad{background:var(--red-tint);color:var(--red)}
+.num{color:var(--muted);font-size:12px}
+.diff{background:var(--card);border-radius:10px;padding:14px;line-height:2;font-size:14px}
+.diff .kept{color:var(--ink)}
+.diff .cut{color:var(--muted);background:var(--cut);text-decoration:line-through;text-decoration-color:var(--red);border-radius:4px;padding:1px 2px}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--muted);margin:8px 0}
+.callout{background:var(--amber-tint);color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;margin-top:12px}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input[type=number],input[type=search],select{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:7px 10px;font:inherit;font-size:14px;min-width:0}
+.tbl-wrap{overflow-x:auto;background:var(--card);border-radius:10px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{cursor:pointer;user-select:none;font-weight:600;background:var(--surface)}
+th:hover{color:var(--teal)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:4px 6px 4px 10px;font-size:13px}
+.chip.off{opacity:.55;border-style:dashed}
+.chip button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:2px 5px;border-radius:5px;font-size:13px}
+.chip button:hover{background:var(--surface);color:var(--ink)}
+pre.csv{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;font:12.5px/1.6 var(--mono);overflow:auto;max-height:280px;margin:0}
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-size:14px}
+.checks li{display:flex;gap:8px;align-items:flex-start}
+footer{color:var(--muted);font-size:13px;padding:32px 0 48px;border-top:1px solid var(--line);margin-top:40px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:600px){.req{grid-template-columns:26px 1fr 50px 50px;font-size:13px}.bar{grid-template-columns:72px 1fr 56px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">Compression Lab</div>
+  <nav>
+    <a href="#overview">Overview</a><a href="#lab">Prompt Lab</a><a href="#coverage">Coverage</a>
+    <a href="#cut">What got cut</a><a href="#scale">At scale</a><a href="#demo">CSV Demo</a><a href="#tests">Self-tests</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">Dark / Light</button>
+</div></header>
+
+<main class="wrap">
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="kicker">Challenge 1 · Prompt Compression</div>
+  <h1>Same 13 requirements. Less than half the tokens.</h1>
+  <p class="lede">A verbose request asks an AI coding assistant to add CSV export to a React analytics table. This page compresses it, proves nothing was lost, and runs the feature the prompt describes.</p>
+  <div class="grid g4">
+    <div class="card stat"><div class="n" id="sReduction">—</div><div class="l">estimated token reduction</div></div>
+    <div class="card stat"><div class="n" id="sTokens">—</div><div class="l">tokens, original → optimized</div></div>
+    <div class="card stat"><div class="n" id="sCoverage">—</div><div class="l">requirements kept (live check)</div></div>
+    <div class="card stat"><div class="n" id="sDensity">—</div><div class="l">requirements per 100 tokens</div></div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section id="lab">
+  <h2>Prompt Lab</h2>
+  <p class="lede">Both prompts are editable. Every number on this page updates as you type. Load your own .txt files, or drop them onto a box.</p>
+  <div class="grid g2">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin:0">Original prompt</h3>
+        <div class="row">
+          <label class="btn" for="fileOrig">Load .txt</label><input class="sr" type="file" id="fileOrig" accept=".txt,text/plain">
+        </div>
+      </div>
+      <textarea id="taOrig" spellcheck="false"></textarea>
+      <div class="meter" id="mOrig"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin:0">Optimized prompt</h3>
+        <div class="row">
+          <label class="btn" for="fileOpt">Load .txt</label><input class="sr" type="file" id="fileOpt" accept=".txt,text/plain">
+          <button class="btn" id="copyOpt">Copy</button>
+        </div>
+      </div>
+      <textarea id="taOpt" spellcheck="false"></textarea>
+      <div class="meter" id="mOpt"></div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="resetBtn">Reset to submission</button>
+    <span class="pill" id="srcPill">Source: built-in submission text</span>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Token utilisation <span class="pill">estimate = characters ÷ 4</span></h3>
+    <div class="bars">
+      <div class="bar"><span>Original</span><div class="track"><div class="fill" id="bOrig" style="background:var(--grey)"></div></div><b id="vOrig"></b></div>
+      <div class="bar"><span>Optimized</span><div class="track"><div class="fill" id="bOpt" style="background:var(--teal)"></div></div><b id="vOpt"></b></div>
+    </div>
+    <div class="formula" id="formula"></div>
+    <div class="callout" id="band"></div>
+  </div>
+</section>
+
+<!-- COVERAGE -->
+<section id="coverage">
+  <h2>Requirement coverage</h2>
+  <p class="lede">Each of the 13 requirements in the original is checked against both prompts with its own text pattern. Try deleting a rule from the optimized prompt and watch its row turn red.</p>
+  <div class="card">
+    <div class="req head"><span>#</span><span>Requirement</span><span>Original</span><span>Optimized</span></div>
+    <div id="reqList"></div>
+  </div>
+</section>
+
+<!-- CUT -->
+<section id="cut">
+  <h2>What got cut</h2>
+  <p class="lede">Words from the original that do not appear in the optimized prompt are struck through. Almost all of them are greeting, politeness, justification and repetition.</p>
+  <div class="legend"><span><span class="kept">kept</span> word also used in the optimized prompt</span><span><span class="cut" style="background:var(--cut);text-decoration:line-through;padding:0 3px;border-radius:4px">cut</span> removed</span></div>
+  <div class="diff" id="diff"></div>
+  <div class="meter" id="cutStats"></div>
+</section>
+
+<!-- SCALE -->
+<section id="scale">
+  <h2>At scale</h2>
+  <p class="lede">Prompt savings compound for teams that reuse templates. Set your own volume and price per million input tokens; the price is an assumption you enter, not a quoted rate.</p>
+  <div class="card">
+    <div class="row" style="gap:16px">
+      <label class="f">Prompt runs per day<input type="number" id="runs" value="1000" min="0" step="100"></label>
+      <label class="f">Price per 1M input tokens (USD)<input type="number" id="price" value="3" min="0" step="0.5"></label>
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      <div class="stat"><div class="n" id="tDay">—</div><div class="l">tokens saved per day</div></div>
+      <div class="stat"><div class="n" id="tYear">—</div><div class="l">tokens saved per year</div></div>
+      <div class="stat"><div class="n" id="cYear">—</div><div class="l">input cost saved per year</div></div>
+      <div class="stat"><div class="n" id="ctx">—</div><div class="l">more prompts per same context budget</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo">
+  <h2>Live CSV export demo</h2>
+  <p class="lede">This is the feature the optimized prompt asks for. Filter, sort, hide and reorder columns, then export. The preview shows exactly what the downloaded file contains, and the proof list re-reads that CSV and checks it against the table.</p>
+  <div class="card">
+    <div class="row" style="gap:12px;margin-bottom:12px">
+      <label class="f" style="flex:1;min-width:180px">Search<input type="search" id="q" placeholder="Filter rows, e.g. blog"></label>
+      <label class="f">Channel<select id="channel"><option value="">All</option></select></label>
+      <label class="f">Min sessions<input type="number" id="minSessions" value="0" min="0" step="100" style="width:120px"></label>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="meter" style="margin:0 0 6px">Columns: click the name to show or hide it, arrows to reorder</div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="tbl-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <div class="row" style="justify-content:space-between;margin-top:12px">
+      <span class="meter" id="tblMeta" style="margin:0"></span>
+      <button class="btn primary" id="exportBtn">Export CSV</button>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>CSV preview <span class="pill">exact file contents</span></h3><pre class="csv" id="csvPreview"></pre></div>
+    <div class="card"><h3>Proof, checked live</h3><ul class="checks" id="proof"></ul></div>
+  </div>
+</section>
+
+<!-- TESTS -->
+<section id="tests">
+  <h2>Self-tests</h2>
+  <p class="lede">The same 6 tests as <code>tests/exportToCsv.test.mjs</code>, run in your browser against the code on this page.</p>
+  <div class="card">
+    <button class="btn primary" id="runTests">Run tests</button>
+    <ul class="checks" id="testOut" style="margin-top:12px"></ul>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Token estimate uses characters ÷ 4 as the competition specifies; real tokenizer counts vary. The export logic on this page mirrors <code>src/utils/exportToCsv.js</code> and uses no libraries.</div></footer>
+
+<script>
+/* ---------- Submission text (also loaded from prompts/ when served over http) ---------- */
+const DEFAULT_ORIG = "Hello, I need you to help me with something in our React dashboard. We have a table on the analytics page and users are asking for export. Please add an export button so they can export the table. The export should be CSV. Please remember that it must export whatever rows the user is currently seeing after applying filters, because filtered data is important. Sorting should also be respected. Keep the columns in the same visible order. Hidden columns must not be exported. Dates should be in ISO 8601 format. Please do not add another package or dependency. Before changing anything, inspect the project and tell me which files are relevant. Then implement it. After implementation, tell me what files changed and how to verify the feature. Please make sure existing filtering and sorting still work. Again, the main task is to add CSV export to the current analytics table.";
+const DEFAULT_OPT = "Task: Add a CSV export button to the existing React analytics page table.\nRules:\n- Export only rows currently shown (filtered + sorted).\n- Keep visible column order; omit hidden columns.\n- Dates: ISO 8601.\n- No new dependencies.\n- Keep existing filter/sort behavior intact.\nSteps:\n1. Inspect project; list relevant files before editing.\n2. Implement.\n3. Report changed files and verification steps.";
+
+/* ---------- Requirement patterns ---------- */
+const REQS = [
+  ["Add an export button to the React analytics table", t => /react/.test(t) && /analytics/.test(t) && /table/.test(t) && /(button|export)/.test(t)],
+  ["Export format is CSV", t => /\bcsv\b/.test(t)],
+  ["Export only rows visible after filters", t => /filter/.test(t) && /(rows|seeing|shown|visible)/.test(t)],
+  ["Respect current sorting", t => /sort/.test(t)],
+  ["Keep visible column order", t => /column/.test(t) && /order/.test(t)],
+  ["Exclude hidden columns", t => /hidden/.test(t) && /(omit|exclude|not be exported|must not|skip|drop)/.test(t)],
+  ["Dates in ISO 8601", t => /iso\s?8601/.test(t)],
+  ["Add no new package or dependency", t => /(no|not|without|zero)[^.\n]{0,30}(dependenc|package)/.test(t)],
+  ["Existing filter and sort keep working", t => /(intact|still work|unchanged|keep existing|don.t break|preserve)/.test(t) && /filter/.test(t)],
+  ["Inspect project and list relevant files first", t => /(inspect|identify)/.test(t) && /(relevant|files)/.test(t) && /(before|first)/.test(t)],
+  ["Then implement", t => /implement/.test(t)],
+  ["Report which files changed", t => /(files? changed|changed files|what files changed)/.test(t)],
+  ["Report how to verify", t => /verif/.test(t)],
+];
+
+const $ = id => document.getElementById(id);
+const taOrig = $("taOrig"), taOpt = $("taOpt");
+const est = s => s.length / 4;
+const fmt = n => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+const words = s => (s.match(/[A-Za-z0-9]+/g) || []).length;
+const coverage = s => REQS.map(([, f]) => f(s.toLowerCase()));
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+function analyse() {
+  const o = taOrig.value, p = taOpt.value;
+  const to = est(o), tp = est(p);
+  const red = to ? (to - tp) / to * 100 : 0;
+  const cO = coverage(o), cP = coverage(p);
+  const kept = cP.filter(Boolean).length;
+
+  $("mOrig").innerHTML = `<b>${o.length}</b> chars · <b>${words(o)}</b> words · <b>${fmt(to)}</b> est. tokens`;
+  $("mOpt").innerHTML = `<b>${p.length}</b> chars · <b>${words(p)}</b> words · <b>${fmt(tp)}</b> est. tokens`;
+  const max = Math.max(to, tp, 1);
+  $("bOrig").style.width = (to / max * 100) + "%"; $("bOpt").style.width = (tp / max * 100) + "%";
+  $("vOrig").textContent = fmt(to); $("vOpt").textContent = fmt(tp);
+  $("formula").textContent =
+`Original : ${o.length} chars ÷ 4 = ${fmt(to)} tokens
+Optimized: ${p.length} chars ÷ 4 = ${fmt(tp)} tokens
+Reduction: (${fmt(to)} − ${fmt(tp)}) ÷ ${fmt(to)} × 100 = ${red.toFixed(1)}%`;
+  const band = red >= 40 && red <= 60 ? "inside the 40–60% band that winning submissions usually reach"
+    : red > 60 ? "above 60%: check that no requirement was lost" : "below 40%: there is more filler to remove";
+  $("band").innerHTML = `<b>${red.toFixed(1)}% reduction</b>, ${band}, with <b>${kept}/${REQS.length}</b> requirements detected.`;
+
+  $("sReduction").textContent = red.toFixed(1) + "%";
+  $("sTokens").textContent = `${Math.round(to)} → ${Math.round(tp)}`;
+  $("sCoverage").textContent = `${kept}/${REQS.length}`;
+  $("sCoverage").style.color = kept === REQS.length ? "var(--teal)" : "var(--red)";
+  const dO = cO.filter(Boolean).length / to * 100, dP = kept / tp * 100;
+  $("sDensity").textContent = `${dO.toFixed(1)} → ${dP.toFixed(1)}`;
+
+  $("reqList").innerHTML = REQS.map(([label], i) =>
+    `<div class="req"><span class="num">${i + 1}</span><span>${label}</span>
+     <span class="mark ${cO[i] ? "ok" : "bad"}">${cO[i] ? "✓" : "✗"}</span>
+     <span class="mark ${cP[i] ? "ok" : "bad"}">${cP[i] ? "✓" : "✗"}</span></div>`).join("");
+
+  // What got cut
+  const keep = new Set((p.toLowerCase().match(/[a-z0-9]+/g) || []));
+  let cut = 0, total = 0;
+  $("diff").innerHTML = o.split(/(\s+)/).map(tok => {
+    if (/^\s+$/.test(tok) || !tok) return tok;
+    const core = (tok.toLowerCase().match(/[a-z0-9]+/g) || []);
+    if (!core.length) return esc(tok);
+    total++;
+    const isKept = core.every(w => keep.has(w));
+    if (!isKept) cut++;
+    return `<span class="${isKept ? "kept" : "cut"}">${esc(tok)}</span>`;
+  }).join("");
+  $("cutStats").innerHTML = `<b>${cut}</b> of <b>${total}</b> words removed (${total ? Math.round(cut / total * 100) : 0}%), while coverage stays at <b>${kept}/${REQS.length}</b>.`;
+
+  scale(to, tp);
+}
+
+function scale(to = est(taOrig.value), tp = est(taOpt.value)) {
+  const runs = Math.max(0, +$("runs").value || 0), price = Math.max(0, +$("price").value || 0);
+  const saved = (to - tp) * runs;
+  $("tDay").textContent = Math.round(saved).toLocaleString();
+  $("tYear").textContent = compact(saved * 365);
+  $("cYear").textContent = "$" + (saved * 365 / 1e6 * price).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  $("ctx").textContent = tp ? (to / tp).toFixed(2) + "×" : "—";
+}
+const compact = n => n >= 1e9 ? (n / 1e9).toFixed(2) + "B" : n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : Math.round(n) + "";
+
+/* ---------- Prompt loading ---------- */
+function setPrompts(o, p, label) { taOrig.value = o; taOpt.value = p; $("srcPill").textContent = "Source: " + label; analyse(); }
+async function tryLoadFromRepo() {
+  if (location.protocol === "file:") return; // browsers block fetch from local files; built-in text is used
+  try {
+    const [a, b] = await Promise.all(["prompts/original_prompt.txt", "prompts/optimized_prompt.txt"].map(u => fetch(u).then(r => { if (!r.ok) throw 0; return r.text(); })));
+    setPrompts(a.replace(/\n$/, ""), b.replace(/\n$/, ""), "repo files in prompts/");
+  } catch { /* opened as a local file: built-in text stays */ }
+}
+function wireFile(input, ta, name) {
+  const read = f => f && f.text().then(t => { ta.value = t.replace(/\n$/, ""); $("srcPill").textContent = "Source: " + name + " loaded from " + f.name; analyse(); });
+  input.addEventListener("change", () => read(input.files[0]));
+  ta.addEventListener("dragover", e => e.preventDefault());
+  ta.addEventListener("drop", e => { e.preventDefault(); read(e.dataTransfer.files[0]); });
+}
+wireFile($("fileOrig"), taOrig, "original"); wireFile($("fileOpt"), taOpt, "optimized");
+taOrig.addEventListener("input", analyse); taOpt.addEventListener("input", analyse);
+$("runs").addEventListener("input", () => scale()); $("price").addEventListener("input", () => scale());
+$("resetBtn").addEventListener("click", () => setPrompts(DEFAULT_ORIG, DEFAULT_OPT, "built-in submission text"));
+$("copyOpt").addEventListener("click", async e => {
+  try { await navigator.clipboard.writeText(taOpt.value); e.target.textContent = "Copied"; }
+  catch { taOpt.select(); document.execCommand("copy"); e.target.textContent = "Copied"; }
+  setTimeout(() => e.target.textContent = "Copy", 1500);
+});
+
+/* ---------- CSV export logic (mirrors src/utils/exportToCsv.js) ---------- */
+function toIso8601(v) {
+  if (v === null || v === undefined || v === "") return "";
+  const d = v instanceof Date ? v : new Date(v);
+  return Number.isNaN(d.getTime()) ? String(v) : d.toISOString();
+}
+function escapeCell(raw) {
+  if (raw === null || raw === undefined) return "";
+  let s = String(raw);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function formatCell(row, c) {
+  const v = c.accessor ? c.accessor(row) : row[c.id];
+  return (c.type === "date" || v instanceof Date) ? toIso8601(v) : v;
+}
+function buildCsv(rows, columns) {
+  const cols = columns.filter(c => !c.hidden);
+  const lines = [cols.map(c => escapeCell(c.header)).join(",")];
+  for (const r of rows) lines.push(cols.map(c => escapeCell(formatCell(r, c))).join(","));
+  return lines.join("\r\n");
+}
+function downloadCsv(csv, filename) {
+  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function parseCsv(text) { // small RFC 4180 reader, used only for the proof checks
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\r") { /* skip */ }
+    else if (ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  row.push(cell); rows.push(row); return rows;
+}
+
+/* ---------- Demo table (stands in for the existing analytics table) ---------- */
+const D = (m, d) => new Date(Date.UTC(2026, m - 1, d, 9, 30));
+const DATA = [
+  { id: "r01", date: D(9, 14), page: "/home", channel: "Organic", sessions: 4820, conversions: 212, note: "Hero test, variant B" },
+  { id: "r02", date: D(9, 15), page: "/pricing", channel: "Paid", sessions: 3105, conversions: 248, note: 'Banner "Save 20%"' },
+  { id: "r03", date: D(9, 16), page: "/blog/csv-tips", channel: "Social", sessions: 1290, conversions: 31, note: "Shared, by partner" },
+  { id: "r04", date: D(9, 18), page: "/docs", channel: "Organic", sessions: 2240, conversions: 44, note: "Search traffic" },
+  { id: "r05", date: D(9, 21), page: "/signup", channel: "Email", sessions: 980, conversions: 173, note: "Newsletter #42" },
+  { id: "r06", date: D(9, 23), page: "/pricing", channel: "Organic", sessions: 2710, conversions: 160, note: "=SUM(A1:A9) pasted by user" },
+  { id: "r07", date: D(9, 25), page: "/blog/dashboards", channel: "Referral", sessions: 640, conversions: 12, note: "Linked from forum" },
+  { id: "r08", date: D(9, 28), page: "/home", channel: "Paid", sessions: 5310, conversions: 199, note: "Campaign: Autumn" },
+  { id: "r09", date: D(10, 1), page: "/integrations", channel: "Email", sessions: 760, conversions: 38, note: "Product update" },
+  { id: "r10", date: D(10, 3), page: "/blog/csv-tips", channel: "Organic", sessions: 1875, conversions: 52, note: "Ranking improved" },
+  { id: "r11", date: D(10, 5), page: "/contact", channel: "Referral", sessions: 410, conversions: 27, note: "Multi-line\nnote" },
+  { id: "r12", date: D(10, 7), page: "/signup", channel: "Social", sessions: 1520, conversions: 96, note: "Launch week" },
+];
+const COLS = [
+  { id: "date", header: "Date", type: "date" },
+  { id: "page", header: "Page" },
+  { id: "channel", header: "Channel" },
+  { id: "sessions", header: "Sessions", type: "number" },
+  { id: "conversions", header: "Conversions", type: "number" },
+  { id: "rate", header: "Conv. rate %", type: "number", accessor: r => +(r.conversions / r.sessions * 100).toFixed(2) },
+  { id: "note", header: "Note" },
+  { id: "id", header: "Internal ID", hidden: true },
+];
+const state = { q: "", channel: "", min: 0, sort: { id: "date", dir: "desc" }, columns: COLS.map(c => ({ ...c })) };
+const display = (r, c) => c.type === "date"
+  ? r[c.id].toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })
+  : c.type === "number" ? (c.accessor ? c.accessor(r) : r[c.id]).toLocaleString() : String(c.accessor ? c.accessor(r) : r[c.id]);
+
+function visibleRows() { // the table's single source of truth
+  const q = state.q.trim().toLowerCase();
+  let rows = DATA.filter(r =>
+    (!state.channel || r.channel === state.channel) && r.sessions >= state.min &&
+    (!q || state.columns.filter(c => !c.hidden).some(c => String(c.accessor ? c.accessor(r) : r[c.id]).toLowerCase().includes(q))));
+  const c = state.columns.find(x => x.id === state.sort.id);
+  if (c) {
+    const m = state.sort.dir === "asc" ? 1 : -1, get = r => c.accessor ? c.accessor(r) : r[c.id];
+    rows = [...rows].sort((a, b) => { const x = get(a), y = get(b); return x > y ? m : x < y ? -m : 0; });
+  }
+  return rows;
+}
+
+function renderDemo() {
+  const cols = state.columns.filter(c => !c.hidden), rows = visibleRows();
+  $("tbl").tHead.innerHTML = "<tr>" + cols.map(c => {
+    const s = state.sort.id === c.id ? (state.sort.dir === "asc" ? " ▲" : " ▼") : "";
+    return `<th class="${c.type === "number" ? "n" : ""}" data-id="${c.id}" aria-sort="${s ? (state.sort.dir === "asc" ? "ascending" : "descending") : "none"}">${esc(c.header)}${s}</th>`;
+  }).join("") + "</tr>";
+  $("tbl").tBodies[0].innerHTML = rows.length ? rows.map(r => "<tr>" + cols.map(c =>
+    `<td class="${c.type === "number" ? "n" : ""}">${esc(display(r, c)).replace(/\n/g, " ↵ ")}</td>`).join("") + "</tr>").join("")
+    : `<tr><td colspan="${cols.length}" style="color:var(--muted)">No rows match the filters.</td></tr>`;
+  $("chips").innerHTML = state.columns.map((c, i) =>
+    `<span class="chip ${c.hidden ? "off" : ""}"><button data-act="toggle" data-i="${i}" title="${c.hidden ? "Show" : "Hide"} column" style="color:var(--ink);padding:2px 0">${c.hidden ? "◌" : "●"} ${esc(c.header)}</button>
+     <button data-act="left" data-i="${i}" aria-label="Move ${esc(c.header)} left" ${i === 0 ? "disabled" : ""}>←</button>
+     <button data-act="right" data-i="${i}" aria-label="Move ${esc(c.header)} right" ${i === state.columns.length - 1 ? "disabled" : ""}>→</button></span>`).join("");
+  $("tblMeta").innerHTML = `Showing <b>${rows.length}</b> of ${DATA.length} rows · <b>${cols.length}</b> of ${state.columns.length} columns`;
+  $("exportBtn").disabled = rows.length === 0;
+  const csv = buildCsv(rows, state.columns);
+  $("csvPreview").textContent = csv.replace(/\r\n/g, "\n");
+  proof(csv, rows, cols);
+}
+
+let lastExportCheck = null;
+function proof(csv, rows, cols) {
+  const parsed = parseCsv(csv), header = parsed[0], body = parsed.slice(1).filter(r => !(r.length === 1 && r[0] === "" && rows.length === 0));
+  const hiddenHeaders = state.columns.filter(c => c.hidden).map(c => c.header);
+  const dateCols = cols.map((c, i) => c.type === "date" ? i : -1).filter(i => i >= 0);
+  const checks = [
+    ["Row count matches the table (filters applied)", body.length === rows.length, `${body.length} CSV rows = ${rows.length} table rows`],
+    ["Row order matches the current sort", rows.every((r, i) => body[i] && cols.every((c, j) => String(formatCell(r, c) ?? "") === (body[i][j].startsWith("'") && !String(formatCell(r, c)).startsWith("'") ? body[i][j].slice(1) : body[i][j]))), `sorted by ${state.columns.find(c => c.id === state.sort.id)?.header || "none"} ${state.sort.dir}`],
+    ["Header order matches visible column order", header.join("|") === cols.map(c => c.header).join("|"), header.join(" · ")],
+    ["Hidden columns excluded", hiddenHeaders.every(h => !header.includes(h)), hiddenHeaders.length ? "excluded: " + hiddenHeaders.join(", ") : "no columns hidden"],
+    ["Dates are ISO 8601", dateCols.length === 0 || body.every(r => dateCols.every(i => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(r[i]))), dateCols.length ? "e.g. " + (body[0]?.[dateCols[0]] || "—") : "date column hidden"],
+    ["No libraries used", true, "Blob + URL.createObjectURL + <a download>"],
+  ];
+  if (lastExportCheck) checks.push(["Filter and sort state unchanged after export", lastExportCheck.ok, lastExportCheck.msg]);
+  $("proof").innerHTML = checks.map(([l, ok, d]) =>
+    `<li><span class="mark ${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"}</span><span>${l}<br><span class="num">${esc(d)}</span></span></li>`).join("");
+}
+
+$("tbl").addEventListener("click", e => {
+  const th = e.target.closest("th"); if (!th) return;
+  const id = th.dataset.id;
+  state.sort = { id, dir: state.sort.id === id && state.sort.dir === "asc" ? "desc" : "asc" };
+  renderDemo();
+});
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  const i = +b.dataset.i, cols = state.columns;
+  if (b.dataset.act === "toggle") cols[i].hidden = !cols[i].hidden;
+  if (b.dataset.act === "left" && i > 0) [cols[i - 1], cols[i]] = [cols[i], cols[i - 1]];
+  if (b.dataset.act === "right" && i < cols.length - 1) [cols[i + 1], cols[i]] = [cols[i], cols[i + 1]];
+  renderDemo();
+});
+$("q").addEventListener("input", e => { state.q = e.target.value; renderDemo(); });
+$("channel").addEventListener("change", e => { state.channel = e.target.value; renderDemo(); });
+$("minSessions").addEventListener("input", e => { state.min = +e.target.value || 0; renderDemo(); });
+[...new Set(DATA.map(r => r.channel))].sort().forEach(c => $("channel").insertAdjacentHTML("beforeend", `<option>${c}</option>`));
+$("exportBtn").addEventListener("click", () => {
+  const snap = () => JSON.stringify({ q: state.q, channel: state.channel, min: state.min, sort: state.sort, cols: state.columns.map(c => [c.id, !!c.hidden]) });
+  const before = snap(), rows = visibleRows();
+  downloadCsv(buildCsv(rows, state.columns), `analytics-${new Date().toISOString().slice(0, 10)}.csv`);
+  const ok = snap() === before;
+  lastExportCheck = { ok, msg: ok ? `exported ${rows.length} rows; state identical before and after` : "state changed during export" };
+  renderDemo();
+});
+
+/* ---------- Self-tests (same cases as tests/exportToCsv.test.mjs) ---------- */
+$("runTests").addEventListener("click", () => {
+  const columns = [
+    { id: "date", header: "Date", type: "date" }, { id: "page", header: "Page" },
+    { id: "internalId", header: "Internal ID", hidden: true }, { id: "views", header: "Views", type: "number" }];
+  const rows = [
+    { date: new Date(Date.UTC(2026, 9, 2)), page: "/pricing", internalId: "x1", views: 900 },
+    { date: "2026-10-01T05:30:00Z", page: "/home, main", internalId: "x2", views: 450 }];
+  const eq = (a, b) => { if (a !== b) throw new Error(`expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+  const tests = [
+    ["exports exactly the visible rows, in visible order", () => { const l = buildCsv(rows, columns).split("\r\n"); eq(l.length, 3); eq(/\/pricing/.test(l[1]), true); eq(/\/home/.test(l[2]), true); }],
+    ["keeps column order and excludes hidden columns", () => { eq(buildCsv(rows, columns).split("\r\n")[0], "Date,Page,Views"); eq(/x1|x2/.test(buildCsv(rows, columns)), false); }],
+    ["respects reordered columns", () => eq(buildCsv([], [columns[3], columns[1], columns[0]]), "Views,Page,Date")],
+    ["formats dates as ISO 8601", () => { const l = buildCsv(rows, columns).split("\r\n"); eq(l[1].startsWith("2026-10-02T00:00:00.000Z"), true); eq(l[2].startsWith("2026-10-01T05:30:00.000Z"), true); eq(toIso8601(null), ""); }],
+    ["escapes commas, quotes, newlines and formula injection", () => { eq(escapeCell("a,b"), '"a,b"'); eq(escapeCell('say "hi"'), '"say ""hi"""'); eq(escapeCell("=SUM(A1)"), "'=SUM(A1)"); eq(escapeCell("-42"), "-42"); }],
+    ["does not mutate input rows or columns", () => { const a = JSON.stringify(rows), b = JSON.stringify(columns); buildCsv(rows, columns); eq(JSON.stringify(rows), a); eq(JSON.stringify(columns), b); }],
+  ];
+  let pass = 0;
+  $("testOut").innerHTML = tests.map(([name, fn]) => {
+    try { fn(); pass++; return `<li><span class="mark ok">✓</span><span>${name}</span></li>`; }
+    catch (err) { return `<li><span class="mark bad">✗</span><span>${name}<br><span class="num">${esc(err.message)}</span></span></li>`; }
+  }).join("") + `<li><b>${pass}/${tests.length} passing</b></li>`;
+});
+
+/* ---------- Theme ---------- */
+$("themeBtn").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+
+setPrompts(DEFAULT_ORIG, DEFAULT_OPT, "built-in submission text");
+renderDemo();
+tryLoadFromRepo();
+</script>
+</body>
+</html>
